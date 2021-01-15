@@ -3,61 +3,114 @@ const { Pizza } = require('../models');
 function PizzaController() {}
 
 const create = function(req, res) {
-  index(req, res) {
-    Pizza.find().then((err, pizzas) => {
-      if (err) {
-        res.send(err);
-      }
+  const data = {
+    name: req.body.name,
+    imageUrl: req.body.imageUrl,
+    description: req.body.description,
+    types: req.body.types,
+    sizes: req.body.sizes,
+    price: req.body.price,
+    category: req.body.category,
+    rating: req.body.rating
+  };
 
-      res.json(pizzas);
+  Pizza.create(data, function(err, doc) {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      data: doc
+    });
+  });
+};
+
+const update = async function(req, res) {
+  const pizzaId = req.params.id;
+
+  const data = {
+    name: req.body.name,
+    imageUrl: req.body.imageUrl,
+    description: req.body.description,
+    types: req.body.types,
+    sizes: req.body.sizes,
+    price: req.body.price,
+    category: req.body.category,
+    rating: req.body.rating
+  };
+
+  Pizza.updateOne({ _id: pizzaId }, { $set: data }, function(err, doc) {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      });
+    }
+
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        message: 'PIZZA_NOT_FOUND'
+      });
+    }
+
+    res.json({
+      success: true
+    });
+  });
+};
+
+const remove = async function(req, res) {
+  const id = req.params.id;
+
+  try {
+    await Pizza.findOne({ _id: id });
+  } catch (e) {
+    return res.status(404).json({
+      success: false,
+      message: 'PIZZA_NOT_FOUND'
     });
   }
 
-  create(req, res) {
-    const data = req.body;
+  Pizza.deleteOne({ _id: id }, err => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      });
+    }
 
-    const pizza = new Pizza({
-      name: data.name,
-      description: data.description,
-      imageUrl: data.imageUrl,
+    res.json({
+      status: 'succces'
     });
+  });
+};
 
-    pizza.save().then(() => {
-      res.json({ status: 'ok' });
+const all = function(req, res) {
+  Pizza.find({}, function(err, docs) {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        message: err
+      });
+    }
+
+    res.json({
+      status: 'succces',
+      data: docs
     });
-  }
+  });
+};
 
-  read(req, res) {
-    PizzaModel.findOne({ _id: req.params.id }).then(pizza => {
-      if (!pizza) {
-        res.send({ error: 'not found' });
-      } else {
-        res.json(pizza);
-      }
-    });
-  }
+PizzaController.prototype = {
+  all,
+  create,
+  update,
+  remove
+};
 
-  update(req, res) {
-    PizzaModel.findByIdAndUpdate(req.params.id, { $set: req.body }, err => {
-      if (err) {
-        res.send(err);
-      }
-
-      res.json({ status: 'updated' });
-    });
-  }
-
-  delete(req, res) {
-    PizzaModel.remove({
-      _id: req.params.id,
-    }).then(pizza => {
-      if (pizza) {
-        res.json({ status: 'deleted' });
-      } else {
-        res.json({ status: 'error' });
-      }
-    });
-  }
-}
-
-module.exports = PizzaContoller;
+module.exports = PizzaController;
